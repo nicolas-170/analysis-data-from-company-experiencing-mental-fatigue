@@ -36,22 +36,22 @@ NUMERIC_DTYPES = {
 
 
 def load_data(path=RAW_DATA_PATH) -> pd.DataFrame:
-    """Lee el CSV tal cual viene, sin tocar nombres ni tipos."""
-    # el archivo está en latin-1; la última columna llega sin nombre
-    return pd.read_csv(path, encoding="latin-1")
+    # Lee el CSV
+    # el encoding latin-1 se usa para evitar errores con los caracteres especiales de los nombres de las columnas
+    return pd.read_csv(path, encoding="utf-8")
 
 
 def prepare_data(df: pd.DataFrame) -> pd.DataFrame:
-    """Renombra las columnas y convierte cada una a un tipo compacto."""
-    # los nombres nuevos se asignan por posición, así no dependen de la codificación original
+    # Se asignan los nombres a las columnas
     df.columns = COLUMNS
 
-    # fechas en dd/mm/yy del origen, quedan como datetime aaaa-mm-dd
+    # Se convierten las fechas a datetime
     df["Fecha_Contrato"] = pd.to_datetime(df["Fecha_Contrato"], format="%d/%m/%y")
 
-    # único por fila
+    # Se convierte la columna Empleado_Clave a string
     df["Empleado_Clave"] = df["Empleado_Clave"].astype("string")
 
+    # Se convierten las columnas categóricas a category
     for column in CATEGORICAL_COLUMNS:
         df[column] = df[column].astype("category")
 
@@ -63,15 +63,20 @@ def prepare_data(df: pd.DataFrame) -> pd.DataFrame:
 
     # se aplica el orden de jerarquía a Cargo
     df["Cargo"] = pd.Categorical(df["Cargo"], categories=CARGO_ORDER, ordered=True)
+
     return df
 
 
 def drop_salary(df: pd.DataFrame) -> pd.DataFrame:
-    """Elimina la columna Sueldo, que no entra en el análisis."""
     return df.drop(columns=["Sueldo"])
 
-
 def show_nulls(df: pd.DataFrame) -> None:
-    """Muestra la cantidad de nulos por columna."""
+    # ancho de la columna más larga, para que los números queden alineados
+    width = max(len(str(column)) for column in df.columns)
+    null_counts = df.isna().sum()
+
     print("\nNulos por columna:")
-    print(df.isna().sum())
+    for column, total in null_counts.items():
+        print(f"  {column:<{width}}  {total}")
+    print(f"\nTotal de nulos en los datos: {null_counts.sum()}\n")
+    
